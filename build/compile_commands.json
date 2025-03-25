@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/hander/Documents/lightc/build",
+  "command": "/usr/bin/gcc -I/home/hander/Documents/lightc/include -g -o CMakeFiles/lcjit.dir/src/lc_types.c.o -c /home/hander/Documents/lightc/src/lc_types.c",
+  "file": "/home/hander/Documents/lightc/src/lc_types.c",
+  "output": "CMakeFiles/lcjit.dir/src/lc_types.c.o"
+}
+]

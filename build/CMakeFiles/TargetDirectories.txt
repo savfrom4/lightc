@@ -1,0 +1,3 @@
+/home/hander/Documents/lightc/build/CMakeFiles/lcjit.dir
+/home/hander/Documents/lightc/build/CMakeFiles/edit_cache.dir
+/home/hander/Documents/lightc/build/CMakeFiles/rebuild_cache.dir
