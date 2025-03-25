@@ -3,12 +3,12 @@
 #include <stdio.h>
 
 static lc_error g_error = LCE_UNKNOWN;
-static lc_char  g_error_msg[256];
+static lc_char g_error_msg[256];
 
-lc_void lc_error_set(lc_error error, const lc_char* context)
-{    
+lc_void lc_error_set(lc_error error, const lc_char *context)
+{
     g_error = error;
-    switch (error) 
+    switch (error)
     {
     case LCE_UNKNOWN:
         snprintf(g_error_msg, sizeof(g_error_msg), "Unknown error.");
@@ -33,7 +33,7 @@ lc_error lc_error_kind(lc_void)
     return g_error;
 }
 
-const lc_char* lc_error_msg(lc_void)
+const lc_char *lc_error_msg(lc_void)
 {
     return g_error_msg;
 }
