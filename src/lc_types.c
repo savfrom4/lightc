@@ -5,44 +5,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-static lc_number STATIC_NUMERIC_DATA[] = {
-    {sizeof(lc_int8), true},
-    {sizeof(lc_int16), true},
-    {sizeof(lc_int32), true},
-    {sizeof(lc_int64), true},
-
-    {sizeof(lc_uint8), false},
-    {sizeof(lc_uint16), false},
-    {sizeof(lc_uint32), false},
-    {sizeof(lc_uint64), false},
-    {sizeof(lc_usize), false},
-
-    {sizeof(lc_float32), false},
-    {sizeof(lc_float64), false},
-
-};
-
-lc_type STATIC_TYPES[] = {
-    {LCT_VOID, lc_string_comptime("void"), NULL},
-    {LCT_NULL, lc_string_comptime("null"), NULL},
-    {LCT_BOOL, lc_string_comptime("bool"), NULL},
-    {LCT_STRING, lc_string_comptime("string"), NULL},
-    {LCT_LIST, lc_string_comptime("list"), NULL},
-
-    {LCT_INTEGER, lc_string_comptime("int8"), &STATIC_NUMERIC_DATA[0]},
-    {LCT_INTEGER, lc_string_comptime("int16"), &STATIC_NUMERIC_DATA[1]},
-    {LCT_INTEGER, lc_string_comptime("int32"), &STATIC_NUMERIC_DATA[2]},
-    {LCT_INTEGER, lc_string_comptime("int64"), &STATIC_NUMERIC_DATA[3]},
-    {LCT_INTEGER, lc_string_comptime("uint8"), &STATIC_NUMERIC_DATA[4]},
-    {LCT_INTEGER, lc_string_comptime("uint16"), &STATIC_NUMERIC_DATA[5]},
-    {LCT_INTEGER, lc_string_comptime("uint32"), &STATIC_NUMERIC_DATA[6]},
-    {LCT_INTEGER, lc_string_comptime("uint64"), &STATIC_NUMERIC_DATA[7]},
-    {LCT_INTEGER, lc_string_comptime("usize"), &STATIC_NUMERIC_DATA[8]},
-
-    {LCT_FLOAT, lc_string_comptime("float32"), &STATIC_NUMERIC_DATA[9]},
-    {LCT_FLOAT, lc_string_comptime("float64"), &STATIC_NUMERIC_DATA[10]},
-};
-
 lc_string *lc_string_new(const lc_char *str, lc_usize size)
 {
     lc_string *str_ptr = lc_mem_alloc(sizeof(lc_string));
@@ -162,13 +124,13 @@ lc_bool lc_list_append(lc_list *list, void *value)
 
 lc_bool lc_list_remove(lc_list *list, lc_usize index)
 {
-    if(index >= list->size)
+    if (index >= list->size)
     {
         lc_error_set(LCE_INVALID_ARGUMENT, "index");
         return false;
     }
 
-    if(index + 1 < list->size)
+    if (index + 1 < list->size)
         lc_mem_copy(list->ptr + index * list->el_size, list->ptr + (index + 1) * list->el_size, (list->size - index - 1) * list->el_size);
 
     list->size--;
@@ -181,7 +143,7 @@ lc_void lc_list_free(lc_list *list)
     lc_mem_free(list);
 }
 
-lc_void lc_list_dump(const lc_list* list)
+lc_void lc_list_dump(const lc_list *list)
 {
     printf("lc_list { size: %lu, capt: %lu }\n", list->size, list->capt);
 }

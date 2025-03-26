@@ -5,15 +5,19 @@
 typedef enum
 {
     LCOP_NOOP,
-    LCOP_PUSH,
+    LCOP_ASSIGN,
+
+    LCOP_PUSHNEW,
+    LCOP_PUSHVALUE,
     LCOP_POP,
 
+    LCOP_CALL,
 } lc_vm_op;
 
 typedef struct
 {
-
     lc_value *stack[512];
+    lc_list* types;
     lc_usize top;
 } lc_vm;
 

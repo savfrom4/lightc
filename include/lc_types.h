@@ -52,7 +52,7 @@ typedef struct
 
 typedef struct
 {
-    lc_void* ptr;
+    lc_void *ptr;
     lc_usize capt, el_size, size;
 } lc_list;
 
@@ -82,18 +82,16 @@ lc_void lc_string_free(lc_string *str);
 lc_string *lc_string_format(const lc_char *format, ...);
 lc_string *lc_string_dupe(const lc_string *str);
 
-#define lc_list_foreach(list, name) for(lc_void* name = list->ptr; name < list->ptr + list->size * list->el_size; name += list->el_size)
+#define lc_list_foreach(list, name) for (lc_void *name = list->ptr; name < list->ptr + list->size * list->el_size; name += list->el_size)
 #define lc_list_new(type, capacity) lc_list_new_sized(sizeof(type), capacity)
 lc_list *lc_list_new_sized(lc_usize el_size, lc_usize capacity);
 lc_bool lc_list_append(lc_list *list, void *value);
 lc_bool lc_list_remove(lc_list *list, lc_usize index);
 lc_void lc_list_free(lc_list *list);
-lc_void lc_list_dump(const lc_list* list);
+lc_void lc_list_dump(const lc_list *list);
 
 lc_value *lc_value_new(lc_type *type, lc_void *data, lc_usize size, lc_bool ptr);
 lc_void lc_value_free(lc_value *value);
 lc_void lc_value_dump(const lc_value *value);
-
-extern lc_type STATIC_TYPES[];
 
 #endif
