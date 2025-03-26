@@ -148,32 +148,34 @@ lc_void lc_list_dump(const lc_list *list)
     printf("lc_list { size: %lu, capt: %lu }\n", list->size, list->capt);
 }
 
-lc_value *lc_value_new(const lc_type *type, lc_void *data, lc_usize size, bool ptr)
+lc_value lc_value_new(const lc_type *type, lc_usize data, bool ptr)
 {
-    lc_value *value = lc_mem_alloc(sizeof(lc_value));
-    if (!value)
-    {
-        lc_error_set(LCE_ALLOC_FAILED, "value");
-        return NULL;
-    }
-
-    *value = (lc_value){
+    return (lc_value){
         .type = type,
         .data = data,
-        .size = size,
         .ptr = ptr,
     };
-
-    return value;
 }
 
 lc_void lc_value_dump(const lc_value *value)
 {
-    printf("lc_value { type: %s, data: %p, size: %lu, flags: %d }\n", value->type->idnt.data, value->data, value->size, value->ptr);
+    printf("lc_value { type: %s, data: %lu, flags: %d }\n", value->type->idnt.data, value->data, value->ptr);
 }
 
 lc_void lc_value_free(lc_value *value)
 {
-    lc_mem_free(value->data);
-    lc_mem_free(value);
+    switch (value->type->kind)
+    {
+    case LCT_STRING:
+        lc_string_free((lc_string *)value->data);
+        break;
+
+    case LCT_LIST:
+    case LCT_STRUCT:
+        lc_mem_free((void *)value->data);
+        break;
+
+    default:
+        break;
+    }
 }

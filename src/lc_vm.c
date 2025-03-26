@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-static lc_number TYPE_NUMERIC_DATA[] = {
+static lc_type_number TYPE_NUMERIC_DATA[] = {
     {sizeof(lc_int8), true},
     {sizeof(lc_int16), true},
     {sizeof(lc_int32), true},
@@ -82,7 +82,7 @@ lc_vm *lc_vm_new(const lc_uint8 *bytecode, lc_usize bytecode_size)
 lc_void lc_vm_free(lc_vm *vm)
 {
     for (lc_usize i = 0; i < vm->top; i++)
-        lc_value_free(vm->stack[i]);
+        lc_value_free(&vm->stack[i]);
 
     lc_mem_free(vm);
 }
@@ -90,34 +90,80 @@ lc_void lc_vm_free(lc_vm *vm)
 lc_void lc_vm_dump(lc_vm *vm)
 {
     printf("lc_vm (%p) stack: \n", vm);
-    for (lc_usize i = 0; i < vm->top; i++)
+    for (lc_int32 i = 0; i < vm->top; i++)
     {
-        printf("    %lu: ", i);
-        lc_value_dump(vm->stack[i]);
+        printf("    %d: ", (vm->top - i) - 1);
+        lc_value_dump(&vm->stack[i]);
     }
 }
 
-lc_void lc_vm_push(lc_vm *vm, lc_value *value)
+lc_void lc_vm_push_value(lc_vm *vm, lc_value *value)
 {
-    vm->stack[vm->top++] = value;
+    lc_mem_copy(&vm->stack[vm->top++], value, sizeof(lc_value));
 }
 
-lc_usize lc_vm_top(lc_vm *vm)
+lc_value *lc_vm_to_value(lc_vm *vm, lc_int32 index)
+{
+    const lc_int32 idx = vm->top - 1 - index;
+    if (idx < 0 || idx >= vm->top)
+    {
+        lc_error_set(LCE_INVALID_ARGUMENT, "index");
+        return NULL;
+    }
+
+    return &vm->stack[vm->top - 1 - index];
+}
+
+lc_string *lc_vm_to_string(lc_vm *vm, lc_int32 index)
+{
+    lc_value *value = lc_vm_to_value(vm, index);
+    if (!value)
+        return NULL;
+
+    if (value->type->kind != LCT_STRING)
+        return NULL;
+
+    return (lc_string *)value->data;
+}
+
+lc_void *lc_vm_to_int(lc_vm *vm, lc_int32 index)
+{
+    lc_value *value = lc_vm_to_value(vm, index);
+    if (!value)
+        return NULL;
+
+    if (value->type->kind != LCT_INTEGER)
+        return NULL;
+
+    return (lc_void *)&value->data;
+}
+
+lc_void *lc_vm_to_float(lc_vm *vm, lc_int32 index)
+{
+    lc_value *value = lc_vm_to_value(vm, index);
+    if (!value)
+        return NULL;
+
+    if (value->type->kind != LCT_FLOAT)
+        return NULL;
+
+    return (lc_void *)&value->data;
+}
+
+lc_int32 lc_vm_top(lc_vm *vm)
 {
     return vm->top;
 }
 
-lc_value *lc_vm_value(lc_vm *vm)
+lc_void lc_vm_pop(lc_vm *vm, lc_int32 count)
 {
-    return vm->stack[vm->top - 1];
-}
+    while (count-- > 0)
+    {
+        if (vm->top == 0)
+            return;
 
-lc_void lc_vm_pop(lc_vm *vm)
-{
-    if (vm->top == 0)
-        return;
-
-    lc_value_free(vm->stack[--vm->top]);
+        lc_value_free(&vm->stack[--vm->top]);
+    }
 }
 
 lc_int32 lc_vm_run(lc_vm *vm)
@@ -130,8 +176,8 @@ lc_int32 lc_vm_run(lc_vm *vm)
         case LCOP_NOOP:
             break;
 
-        case LCOP_PUSHNEW: {
-            lc_uint64 idx;
+        case LCOP_PUSH_NEW: {
+            lc_uint32 idx;
             lc_mem_copy(&idx, vm->btc + vm->btc_roller, sizeof(idx));
             vm->btc_roller += sizeof(idx);
 
@@ -144,8 +190,8 @@ lc_int32 lc_vm_run(lc_vm *vm)
                 return -1;
 
             case LCT_NULL: {
-                lc_value *value = lc_value_new(&TYPE_TABLE[idx], NULL, 0, false);
-                lc_vm_push(vm, value);
+                lc_value value = lc_value_new(&TYPE_TABLE[idx], (lc_usize)NULL, false);
+                lc_vm_push_value(vm, &value);
                 break;
             }
 
@@ -153,8 +199,8 @@ lc_int32 lc_vm_run(lc_vm *vm)
                 lc_bool *ptr = lc_mem_alloc(sizeof(lc_bool));
                 *ptr = vm->btc[vm->btc_roller++];
 
-                lc_value *value = lc_value_new(&TYPE_TABLE[idx], ptr, sizeof(lc_bool), false);
-                lc_vm_push(vm, value);
+                lc_value value = lc_value_new(&TYPE_TABLE[idx], (lc_usize)ptr, false);
+                lc_vm_push_value(vm, &value);
                 break;
             }
 
@@ -166,29 +212,40 @@ lc_int32 lc_vm_run(lc_vm *vm)
                 lc_string *text = lc_string_new((const lc_char *)(vm->btc + vm->btc_roller), len);
                 vm->btc_roller += len;
 
-                lc_value *value = lc_value_new(&TYPE_TABLE[idx], text, sizeof(lc_string), false);
-                lc_vm_push(vm, value);
+                lc_value value = lc_value_new(&TYPE_TABLE[idx], (lc_usize)text, false);
+                lc_vm_push_value(vm, &value);
                 break;
             }
 
             case LCT_INTEGER: {
                 const lc_type *type = &TYPE_TABLE[idx];
-                const lc_number *number = type->data;
+                const lc_type_number *number = type->data;
 
-                lc_void *data = lc_mem_alloc(number->bits);
-                lc_mem_copy(data, vm->btc + vm->btc_roller, number->bits);
-                vm->btc_roller += number->bits;
+                lc_value value = lc_value_new(type, 0, false);
+                lc_mem_copy(&value.data, vm->btc + vm->btc_roller, number->size);
+                vm->btc_roller += number->size;
 
-                lc_value *value = lc_value_new(type, data, number->bits, false);
-                lc_vm_push(vm, value);
+                lc_vm_push_value(vm, &value);
                 break;
             }
             }
             break;
         }
 
-        case LCOP_PUSHVALUE:
+        case LCOP_PUSH_VALUE:
             break;
+
+        case LCOP_ADD: {
+            lc_usize idx;
+            lc_mem_copy(&idx, vm->btc + vm->btc_roller, sizeof(idx));
+            vm->btc_roller += sizeof(idx);
+
+            lc_usize idx2;
+            lc_mem_copy(&idx2, vm->btc + vm->btc_roller, sizeof(idx2));
+            vm->btc_roller += sizeof(idx2);
+
+            break;
+        }
 
         case LCOP_POP:
             break;
