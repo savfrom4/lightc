@@ -34,13 +34,9 @@ const static lc_uint8 BYTECODE[] = {
     DUMP_INT32(7),
     DUMP_INT32(69),
 
-    LCOP_PUSH_NEW,
-    DUMP_INT32(7),
-    DUMP_INT32(69),
-
-    LCOP_PUSH_NEW,
-    DUMP_INT32(7),
-    DUMP_INT32(69),
+    LCOP_IADD,
+    DUMP_INT32(0),
+    DUMP_INT32(1),
 };
 
 int main()
@@ -48,9 +44,9 @@ int main()
     lc_vm *vm = lc_vm_new(BYTECODE, sizeof(BYTECODE));
     lc_vm_run(vm);
 
-    int32_t *value = lc_vm_to_int(vm, 0);
-    printf("i love %d\n", *value);
-    lc_vm_pop(vm, 1);
+    // int32_t *value = lc_vm_to_int(vm, 0);
+    // printf("i love %d\n", *value);
+    // lc_vm_pop(vm, 4);
 
     lc_vm_dump(vm);
     lc_vm_free(vm);

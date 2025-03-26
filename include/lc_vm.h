@@ -10,10 +10,10 @@ typedef enum
     LCOP_PUSH_VALUE,
     LCOP_POP,
 
-    LCOP_ADD,
-    LCOP_SUB,
-    LCOP_MUL,
-    LCOP_DIV,
+    LCOP_IADD,
+    LCOP_ISUB,
+    LCOP_IMUL,
+    LCOP_IDIV,
 
     LCOP_CALL,
 } lc_vm_op;

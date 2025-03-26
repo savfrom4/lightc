@@ -29,20 +29,30 @@ typedef enum
 {
     LCT_VOID,
     LCT_NULL,
-    LCT_BOOL,
     LCT_STRING,
-
-    LCT_INTEGER,
-    LCT_FLOAT,
     LCT_LIST,
-    LCT_STRUCT
-} lc_type_kind;
+    LCT_STRUCT,
+    LCT_BOOL,
+
+    LCT_INT8,
+    LCT_INT16,
+    LCT_INT32,
+    LCT_INT64,
+    LCT_UINT8,
+    LCT_UINT16,
+    LCT_UINT32,
+    LCT_UINT64,
+    LCT_USIZE,
+
+    LCT_FLOAT32,
+    LCT_FLOAT64,
+} lc_type;
 
 typedef struct
 {
-    lc_uint32 size;
-    lc_bool sign;
-} lc_type_number;
+    lc_type type;
+    lc_usize data;
+} lc_value;
 
 typedef struct
 {
@@ -61,20 +71,9 @@ typedef struct
 
 } lc_struct;
 
-typedef struct
-{
-    lc_type_kind kind;
-    lc_string idnt;
-    lc_void *data;
-} lc_type;
-
-typedef struct
-{
-    const lc_type *type;
-
-    lc_usize data;
-    lc_bool ptr;
-} lc_value;
+lc_bool lc_type_is_int(lc_type type);
+lc_bool lc_type_is_float(lc_type type);
+const lc_string *lc_type_name(lc_type type);
 
 #define lc_string_comptime(str) ((lc_string){str, (sizeof(str) - 1)})
 lc_string *lc_string_new(const lc_char *str, lc_usize size);
@@ -90,7 +89,7 @@ lc_bool lc_list_remove(lc_list *list, lc_usize index);
 lc_void lc_list_free(lc_list *list);
 lc_void lc_list_dump(const lc_list *list);
 
-lc_value lc_value_new(const lc_type *type, lc_usize data, lc_bool ptr);
+lc_value lc_value_new(lc_type type, lc_usize data);
 lc_void lc_value_free(lc_value *value);
 lc_void lc_value_dump(const lc_value *value);
 

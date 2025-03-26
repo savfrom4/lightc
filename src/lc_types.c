@@ -5,6 +5,66 @@
 #include <stddef.h>
 #include <stdio.h>
 
+static lc_string STATIC_TYPE_NAMES[] = {
+    lc_string_comptime("void"),
+    lc_string_comptime("null"),
+    lc_string_comptime("string"),
+    lc_string_comptime("list"),
+    lc_string_comptime("struct"),
+    lc_string_comptime("bool"),
+
+    lc_string_comptime("int8"),
+    lc_string_comptime("int16"),
+    lc_string_comptime("int32"),
+    lc_string_comptime("int64"),
+    lc_string_comptime("uint8"),
+    lc_string_comptime("uint16"),
+    lc_string_comptime("uint32"),
+    lc_string_comptime("uint64"),
+    lc_string_comptime("usize"),
+
+    lc_string_comptime("float32"),
+    lc_string_comptime("float64"),
+};
+
+lc_bool lc_type_is_int(lc_type type)
+{
+    switch (type)
+    {
+    case LCT_INT8:
+    case LCT_INT16:
+    case LCT_INT32:
+    case LCT_INT64:
+    case LCT_UINT8:
+    case LCT_UINT16:
+    case LCT_UINT32:
+    case LCT_UINT64:
+    case LCT_USIZE:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+lc_bool lc_type_is_float(lc_type type)
+{
+    switch (type)
+    {
+    case LCT_FLOAT32:
+    case LCT_FLOAT64:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+const lc_string *lc_type_name(lc_type type)
+{
+    return &STATIC_TYPE_NAMES[type];
+}
+
 lc_string *lc_string_new(const lc_char *str, lc_usize size)
 {
     lc_string *str_ptr = lc_mem_alloc(sizeof(lc_string));
@@ -148,23 +208,22 @@ lc_void lc_list_dump(const lc_list *list)
     printf("lc_list { size: %lu, capt: %lu }\n", list->size, list->capt);
 }
 
-lc_value lc_value_new(const lc_type *type, lc_usize data, bool ptr)
+lc_value lc_value_new(lc_type type, lc_usize data)
 {
     return (lc_value){
         .type = type,
         .data = data,
-        .ptr = ptr,
     };
 }
 
 lc_void lc_value_dump(const lc_value *value)
 {
-    printf("lc_value { type: %s, data: %lu, flags: %d }\n", value->type->idnt.data, value->data, value->ptr);
+    printf("lc_value { type: %s, data: %lu }\n", lc_type_name(value->type)->data, value->data);
 }
 
 lc_void lc_value_free(lc_value *value)
 {
-    switch (value->type->kind)
+    switch (value->type)
     {
     case LCT_STRING:
         lc_string_free((lc_string *)value->data);
