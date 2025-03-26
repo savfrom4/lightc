@@ -1,16 +1,35 @@
 #include "lc.h"
+#include "lc_error.h"
+#include "lc_mem.h"
 #include "lc_types.h"
 #include "lc_vm.h"
+#include <stdio.h>
 
 int main()
 {
-    lc_vm *vm = lc_vm_new();
-    lc_value *value = lc_value_new(&STATIC_TYPES[0], NULL, 0, false);
+    lc_list* list = lc_list_new(void**, 1);
+    if(!list)
+    {
+        printf("%s", lc_error_msg());
+        return 1;
+    }
 
-    lc_vm_push(vm, value);
-    lc_vm_dump(vm);
-    lc_vm_pop(vm);
+    void** value = lc_mem_alloc(sizeof(void**));
+    *value = NULL;
 
-    lc_vm_free(vm);
+    lc_list_append(list, value);
+    lc_list_append(list, value);
+    lc_list_append(list, value);
+    lc_list_append(list, value);
+
+    lc_list_remove(list, 2);
+
+    lc_list_dump(list);
+    lc_list_foreach(list, it) {
+        void** test = it;
+        printf("    %p\n",  *test);
+    }
+
+    lc_list_free(list);
     return 0;
 }

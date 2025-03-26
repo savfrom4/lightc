@@ -107,7 +107,7 @@ lc_void lc_string_free(lc_string *str)
     lc_mem_free(str);
 }
 
-lc_list *lc_list_new(lc_usize capacity)
+lc_list *lc_list_new_sized(lc_usize el_size, lc_usize capacity)
 {
     lc_list *list = lc_mem_alloc(sizeof(lc_list));
     if (!list)
@@ -117,9 +117,10 @@ lc_list *lc_list_new(lc_usize capacity)
     }
 
     *list = (lc_list){
-        lc_mem_alloc(capacity * sizeof(lc_void *)),
-        capacity,
-        0,
+        .ptr = lc_mem_alloc(el_size * capacity),
+        .capt = capacity,
+        .el_size = el_size,
+        .size = 0,
     };
 
     if (!list->ptr)
@@ -143,7 +144,7 @@ lc_bool lc_list_append(lc_list *list, void *value)
     if (list->size >= list->capt)
     {
         lc_usize new_capt = list->capt * 2;
-        lc_void *new_ptr = lc_mem_realloc(list->ptr, new_capt);
+        lc_void *new_ptr = lc_mem_realloc(list->ptr, list->el_size * new_capt);
 
         if (!new_ptr)
         {
@@ -155,7 +156,22 @@ lc_bool lc_list_append(lc_list *list, void *value)
         list->capt = new_capt;
     }
 
-    list->ptr[list->size++] = value;
+    lc_mem_copy(list->ptr + (list->size++) * list->el_size, value, list->el_size);
+    return true;
+}
+
+lc_bool lc_list_remove(lc_list *list, lc_usize index)
+{
+    if(index >= list->size)
+    {
+        lc_error_set(LCE_INVALID_ARGUMENT, "index");
+        return false;
+    }
+
+    if(index + 1 < list->size)
+        lc_mem_copy(list->ptr + index * list->el_size, list->ptr + (index + 1) * list->el_size, (list->size - index - 1) * list->el_size);
+
+    list->size--;
     return true;
 }
 
@@ -163,6 +179,11 @@ lc_void lc_list_free(lc_list *list)
 {
     lc_mem_free(list->ptr);
     lc_mem_free(list);
+}
+
+lc_void lc_list_dump(const lc_list* list)
+{
+    printf("lc_list { size: %lu, capt: %lu }\n", list->size, list->capt);
 }
 
 lc_value *lc_value_new(lc_type *type, lc_void *data, lc_usize size, bool ptr)
@@ -175,10 +196,10 @@ lc_value *lc_value_new(lc_type *type, lc_void *data, lc_usize size, bool ptr)
     }
 
     *value = (lc_value){
-        type,
-        data,
-        size,
-        ptr,
+        .type = type,
+        .data = data,
+        .size = size,
+        .ptr = ptr,
     };
 
     return value;
