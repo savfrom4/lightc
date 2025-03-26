@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void *lc_mem_alloc(lc_usize size)
+lc_void *lc_mem_alloc(lc_usize size)
 {
-    void *ptr = malloc(size);
+    lc_void *ptr = malloc(size);
     if (!ptr)
         return NULL;
 
@@ -12,12 +12,22 @@ void *lc_mem_alloc(lc_usize size)
     return ptr;
 }
 
+lc_void *lc_mem_dupe(const lc_void *src, lc_usize size)
+{
+    lc_void *new_ptr = lc_mem_alloc(size);
+    if (!new_ptr)
+        return NULL;
+
+    lc_mem_copy(new_ptr, src, size);
+    return new_ptr;
+}
+
 lc_void *lc_mem_realloc(lc_void *ptr, lc_usize size)
 {
     return realloc(ptr, size);
 }
 
-void lc_mem_free(void *ptr)
+lc_void lc_mem_free(lc_void *ptr)
 {
     free(ptr);
 }

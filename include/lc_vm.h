@@ -5,7 +5,6 @@
 typedef enum
 {
     LCOP_NOOP,
-    LCOP_ASSIGN,
 
     LCOP_PUSHNEW,
     LCOP_PUSHVALUE,
@@ -16,12 +15,16 @@ typedef enum
 
 typedef struct
 {
+    lc_list *types;
     lc_value *stack[512];
-    lc_list* types;
     lc_usize top;
+
+    lc_uint8 *btc;
+    lc_usize btc_size;
+    lc_usize btc_roller;
 } lc_vm;
 
-lc_vm *lc_vm_new(void);
+lc_vm *lc_vm_new(const lc_uint8 *bytecode, lc_usize bytecode_size);
 lc_void lc_vm_free(lc_vm *vm);
 lc_void lc_vm_dump(lc_vm *vm);
 
@@ -29,5 +32,7 @@ lc_void lc_vm_push(lc_vm *vm, lc_value *value);
 lc_usize lc_vm_top(lc_vm *vm);
 lc_value *lc_vm_value(lc_vm *vm);
 lc_void lc_vm_pop(lc_vm *vm);
+
+lc_int32 lc_vm_run(lc_vm *vm);
 
 #endif

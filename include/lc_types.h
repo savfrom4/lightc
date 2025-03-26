@@ -70,7 +70,8 @@ typedef struct
 
 typedef struct
 {
-    lc_type *type;
+    const lc_type *type;
+
     lc_void *data;
     lc_usize size;
     lc_bool ptr;
@@ -90,7 +91,7 @@ lc_bool lc_list_remove(lc_list *list, lc_usize index);
 lc_void lc_list_free(lc_list *list);
 lc_void lc_list_dump(const lc_list *list);
 
-lc_value *lc_value_new(lc_type *type, lc_void *data, lc_usize size, lc_bool ptr);
+lc_value *lc_value_new(const lc_type *type, lc_void *data, lc_usize size, lc_bool ptr);
 lc_void lc_value_free(lc_value *value);
 lc_void lc_value_dump(const lc_value *value);
 

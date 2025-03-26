@@ -148,7 +148,7 @@ lc_void lc_list_dump(const lc_list *list)
     printf("lc_list { size: %lu, capt: %lu }\n", list->size, list->capt);
 }
 
-lc_value *lc_value_new(lc_type *type, lc_void *data, lc_usize size, bool ptr)
+lc_value *lc_value_new(const lc_type *type, lc_void *data, lc_usize size, bool ptr)
 {
     lc_value *value = lc_mem_alloc(sizeof(lc_value));
     if (!value)
