@@ -2,6 +2,7 @@
 #include "lc_error.h"
 #include "lc_mem.h"
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -67,12 +68,8 @@ const lc_string *lc_type_name(lc_type type)
 
 lc_string *lc_string_new(const lc_char *str, lc_usize size)
 {
-    lc_string *str_ptr = lc_mem_alloc(sizeof(lc_string));
-    if (!str_ptr)
-    {
-        lc_error_set(LCE_ALLOC_FAILED, "str_ptr");
-        return NULL;
-    }
+    lc_string *str_ptr;
+    lc_error_return_if(LCE_ALLOC_FAILED, false, !(str_ptr = lc_mem_alloc(sizeof(lc_string))));
 
     *str_ptr = (lc_string){
         .data = lc_mem_alloc(size + 1),
@@ -98,20 +95,12 @@ lc_string *lc_string_format(const lc_char *format, ...)
     va_start(args, format);
 
     // ask for buffer size
-    int length = vsnprintf(NULL, 0, format, args);
-    if (length < 0)
-    {
-        lc_error_set(LCE_OTHER, "vsnprintf < 0");
-        return NULL;
-    }
+    int length;
+    lc_error_return_if(LCE_OTHER, false, (length = vsnprintf(NULL, 0, format, args)) < 0);
 
     // allocate string of said buffer and call vsnprintf
-    lc_string *str = lc_string_new(NULL, length);
-    if (!str)
-    {
-        lc_error_set(LCE_ALLOC_FAILED, "str");
-        return NULL;
-    }
+    lc_string *str;
+    lc_error_return_if(LCE_ALLOC_FAILED, false, !(str = lc_string_new(NULL, length)));
 
     vsnprintf(str->data, length, format, args);
     va_end(args);
@@ -125,18 +114,17 @@ lc_string *lc_string_dupe(const lc_string *str)
 
 lc_void lc_string_free(lc_string *str)
 {
+    if (!str)
+        return;
+
     lc_mem_free(str->data);
     lc_mem_free(str);
 }
 
 lc_list *lc_list_new_sized(lc_usize el_size, lc_usize capacity)
 {
-    lc_list *list = lc_mem_alloc(sizeof(lc_list));
-    if (!list)
-    {
-        lc_error_set(LCE_ALLOC_FAILED, "list");
-        return NULL;
-    }
+    lc_list *list;
+    lc_error_return_if(LCE_ALLOC_FAILED, false, !(list = lc_mem_alloc(sizeof(lc_list))));
 
     *list = (lc_list){
         .ptr = lc_mem_alloc(el_size * capacity),
@@ -157,23 +145,14 @@ lc_list *lc_list_new_sized(lc_usize el_size, lc_usize capacity)
 
 lc_bool lc_list_append(lc_list *list, void *value)
 {
-    if (!list)
-    {
-        lc_error_set(LCE_INVALID_ARGUMENT, "list");
-        return false;
-    }
+    lc_error_return_if(LCE_INVALID_ARGUMENT, false, !list);
 
     if (list->size >= list->capt)
     {
         lc_usize new_capt = list->capt * 2;
         lc_void *new_ptr = lc_mem_realloc(list->ptr, list->el_size * new_capt);
 
-        if (!new_ptr)
-        {
-            lc_error_set(LCE_ALLOC_FAILED, "new_ptr");
-            return false;
-        }
-
+        lc_error_return_if(LCE_ALLOC_FAILED, false, !new_ptr);
         list->ptr = new_ptr;
         list->capt = new_capt;
     }
@@ -184,12 +163,7 @@ lc_bool lc_list_append(lc_list *list, void *value)
 
 lc_bool lc_list_remove(lc_list *list, lc_usize index)
 {
-    if (index >= list->size)
-    {
-        lc_error_set(LCE_INVALID_ARGUMENT, "index");
-        return false;
-    }
-
+    lc_error_return_if(LCE_INVALID_ARGUMENT, false, index >= list->size);
     if (index + 1 < list->size)
         lc_mem_copy(list->ptr + index * list->el_size, list->ptr + (index + 1) * list->el_size, (list->size - index - 1) * list->el_size);
 

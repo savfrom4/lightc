@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 static lc_error g_error = LCE_UNKNOWN;
-static lc_char g_error_msg[256];
+static lc_char g_error_msg[256] = {};
 
 lc_void lc_error_set(lc_error error, const lc_char *context)
 {
@@ -24,6 +24,14 @@ lc_void lc_error_set(lc_error error, const lc_char *context)
 
     case LCE_ALLOC_FAILED:
         snprintf(g_error_msg, sizeof(g_error_msg), "Allocation failed for: %s", context);
+        break;
+
+    case LCE_VM_STACK_OVERFLOW:
+        snprintf(g_error_msg, sizeof(g_error_msg), "Stack overflow");
+        break;
+
+    case LCE_VM_EARLY_EOF:
+        snprintf(g_error_msg, sizeof(g_error_msg), "Early end-of-file: %s", context);
         break;
     }
 }

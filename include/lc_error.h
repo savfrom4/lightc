@@ -9,7 +9,20 @@ typedef enum
 
     LCE_INVALID_ARGUMENT = -2,
     LCE_ALLOC_FAILED = -3,
+
+    LCE_VM_STACK_OVERFLOW = -4,
+    LCE_VM_EARLY_EOF = -5,
 } lc_error;
+
+#define lc_error_return_if(error, result, expression) \
+    do                                                \
+    {                                                 \
+        if ((expression))                             \
+        {                                             \
+            lc_error_set(error, #expression);         \
+            return result;                            \
+        }                                             \
+    } while (0);
 
 lc_void lc_error_set(lc_error error, const lc_char *context);
 lc_error lc_error_kind(lc_void);
