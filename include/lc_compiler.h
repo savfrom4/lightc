@@ -5,13 +5,13 @@
 typedef enum
 {
     LCTK_NONE,
-    LCTK_TYPE,
     LCTK_KEYWORD,
     LCTK_IDENTIFIER,
     LCTK_OPERATOR,
+    LCTK_DELIMITER,
     LCTK_STRING_LITERAL,
     LCTK_NUMERIC_LITERAL,
-    LCTK_DELIMITER
+    LCTK_SEMICOLON,
 } lc_token_type;
 
 typedef struct

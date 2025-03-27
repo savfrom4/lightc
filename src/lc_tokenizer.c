@@ -6,18 +6,19 @@
 #include <string.h>
 
 // internal functions
-lc_bool lc_token_parse_line(lc_list *list, const lc_char *line_str, lc_usize line_size, lc_usize line_num);
+lc_bool lc_token_append(lc_list *list, lc_token_type type, lc_string *value);
+lc_bool lc_token_parse_fn(lc_list *list, const lc_char *ptr, lc_usize size);
 lc_void lc_token_error_line(const lc_char *line_str, lc_usize line_size, lc_usize line_num, const lc_char *message, lc_usize position);
 
 static lc_string STATIC_TOKEN_NAMES[] = {
     lc_string_comptime("none"),
-    lc_string_comptime("type"),
     lc_string_comptime("keyword"),
     lc_string_comptime("identifier"),
     lc_string_comptime("operator"),
-    lc_string_comptime("numeric literal"),
-    lc_string_comptime("string literal"),
     lc_string_comptime("delimiter"),
+    lc_string_comptime("string literal"),
+    lc_string_comptime("numeric literal"),
+    lc_string_comptime("semicolon"),
 };
 
 lc_string *lc_token_name(lc_token_type type)
@@ -30,42 +31,110 @@ lc_list *lc_token_parse(const lc_string *code)
     lc_list *list = lc_list_new(lc_token, 64);
     lc_error_return_if(LCE_ALLOC_FAILED, NULL, !list);
 
-    lc_char *line_str = code->data, *line_end = NULL;
-    lc_usize line_num = 1, line_size = 0;
-
-    do
+    if (!lc_token_parse_fn(list, code->data, code->size))
     {
-        line_end = strchr(line_str, '\n');
-
-        if (line_end)
-            line_size = (line_end - line_str);
-        else if (line_num == 1)
-            line_size = code->size;
-
-        if (!lc_token_parse_line(list, line_str, line_size, line_num))
-        {
-            lc_list_free(list);
-            return NULL;
-        }
-
-        line_str = line_end + 1;
-        line_num++;
-    } while (line_end);
+        lc_list_free(list);
+        return NULL;
+    }
 
     return list;
 }
 
-inline lc_bool lc_token_parse_line(lc_list *list, const lc_char *line_str, lc_usize line_size, lc_usize line_num)
+inline lc_bool lc_token_parse_fn(lc_list *list, const lc_char *ptr, lc_usize size)
+{
+    lc_usize i = 0, start = 0;
+    lc_usize line_num = 1, line_size = 0;
+
+    while (i < size)
+    {
+        if (isalpha(ptr[i])) // identifier
+        {
+            start = i;
+            while (i < size && (isalnum(ptr[i]) || ptr[i] == '_'))
+                i++;
+
+            if (!lc_token_append(list, LCTK_IDENTIFIER, lc_string_new(&ptr[start], (i - start))))
+                return false;
+
+            continue;
+        }
+        else if (isdigit(ptr[i])) // numeric literal
+        {
+            start = i;
+            while (i < size && (isdigit(ptr[i]) || ptr[i] == '.'))
+                i++;
+
+            if (!lc_token_append(list, LCTK_NUMERIC_LITERAL, lc_string_new(&ptr[start], (i - start))))
+                return false;
+
+            continue;
+        }
+
+        switch (ptr[i])
+        {
+        case ';':
+            i++;
+            if (!lc_token_append(list, LCTK_SEMICOLON, NULL))
+                return false;
+            break;
+
+        case '(':
+        case ')':
+        case '[':
+        case ']':
+        case '{':
+        case '}':
+            if (!lc_token_append(list, LCTK_DELIMITER, lc_string_new(&ptr[i++], sizeof(lc_char))))
+                return false;
+            break;
+
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '=':
+            if (!lc_token_append(list, LCTK_OPERATOR, lc_string_new(&ptr[i++], sizeof(lc_char))))
+                return false;
+            break;
+
+        case '\"': // string literal
+            start = ++i;
+            while (i < size && ptr[i] != '\"')
+            {
+                if (ptr[i] == '\n')
+                {
+                    lc_token_error_line(ptr, size, line_num, "Expected '\"' (end of string literal), got end of the line.", i - 1);
+                    return false;
+                }
+
+                i++;
+            }
+
+            if (!lc_token_append(list, LCTK_STRING_LITERAL, lc_string_new(&ptr[start], (i - start))))
+                return false;
+
+            i++;
+            break;
+
+        case '\n':
+            line_num++;
+            break;
+
+        default:
+            i++;
+            break;
+        }
+    }
+
+    return true;
+}
+
+inline lc_bool lc_token_append(lc_list *list, lc_token_type type, lc_string *value)
 {
     lc_token token = {
-        LCTK_NONE,
-        NULL,
+        .type = type,
+        .value = value,
     };
-
-    for (lc_usize i = 0; i < line_size; i++)
-    {
-        lc_char c = line_str[i];
-    }
 
     if (!lc_list_append(list, &token))
         return false;
@@ -73,10 +142,18 @@ inline lc_bool lc_token_parse_line(lc_list *list, const lc_char *line_str, lc_us
     return true;
 }
 
-inline lc_void lc_token_error_line(const lc_char *line_str, lc_usize line_size, lc_usize line_num, const lc_char *message, lc_usize position)
+inline lc_void lc_token_error_line(const lc_char *ptr, lc_usize size, lc_usize line_num, const lc_char *message, lc_usize position)
 {
+    lc_usize i = 0;
+    const lc_char *start = ptr;
+    while (start)
+    {
+        start = strchr(start, '\n') + 1;
+        i++;
+    }
+
     lc_string *where = lc_string_format("%*s^ \n", position, "");
-    lc_string *what = lc_string_format("%s\n %d | %.*s\n   | %s", message, line_num, line_size, line_str, where->data);
+    lc_string *what = lc_string_format("%s\n %d | %.*s\n   | %s", message, line_num, size, ptr, where->data);
     lc_error_set(LCE_PARSE_ERROR, what->data);
 
     lc_string_free(where);

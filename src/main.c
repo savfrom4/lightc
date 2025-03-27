@@ -41,7 +41,7 @@ static const lc_uint8 BYTECODE[] = {
 
 int main()
 {
-    lc_list *tokens = lc_token_parse(&lc_string_comptime("int32 a =2+2;"));
+    lc_list *tokens = lc_token_parse(&lc_string_comptime("int32 a = 10;\nint32 b = 20;\nint32 c = (a + b) * (a * b);\n"));
     if (!tokens)
     {
         printf("Error: %s\n", lc_error_msg());
