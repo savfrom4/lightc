@@ -33,6 +33,10 @@ lc_void lc_error_set(lc_error error, const lc_char *context)
     case LCE_VM_EARLY_EOF:
         snprintf(g_error_msg, sizeof(g_error_msg), "Early end-of-file: %s", context);
         break;
+
+    case LCE_PARSE_ERROR:
+        snprintf(g_error_msg, sizeof(g_error_msg), "Parse error: %s", context);
+        break;
     }
 }
 

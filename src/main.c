@@ -1,4 +1,5 @@
 #include "lc.h"
+#include "lc_compiler.h"
 #include "lc_error.h"
 #include "lc_mem.h"
 #include "lc_types.h"
@@ -40,25 +41,18 @@ static const lc_uint8 BYTECODE[] = {
 
 int main()
 {
-    lc_vm *vm = lc_vm_new(BYTECODE, sizeof(BYTECODE));
-
-    clock_t start = clock();
-    for (volatile int i = 0; i < 10000000; i++)
+    lc_list *tokens = lc_token_parse(&lc_string_comptime("int32 a =2+2;"));
+    if (!tokens)
     {
-        if (lc_vm_run(vm) < 0)
-        {
-            printf("Error during execution: %s\n", lc_error_msg());
-            return 1;
-        }
-
-        lc_vm_pop(vm, 1);
+        printf("Error: %s\n", lc_error_msg());
+        return 1;
     }
 
-    clock_t end = clock();
-    double elapsed_time = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("took %f\n", elapsed_time);
+    lc_list_foreach(tokens, it)
+    {
+        lc_token *token = it;
+        printf("%s \"%s\"\n", lc_token_name(token->type)->data, token->value ? token->value->data : "null");
+    }
 
-    lc_vm_dump(vm);
-    lc_vm_free(vm);
     return 0;
 }

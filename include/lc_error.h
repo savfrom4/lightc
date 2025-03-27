@@ -12,6 +12,8 @@ typedef enum
 
     LCE_VM_STACK_OVERFLOW = -4,
     LCE_VM_EARLY_EOF = -5,
+
+    LCE_PARSE_ERROR = -6,
 } lc_error;
 
 #define lc_error_return_if(error, result, expression) \

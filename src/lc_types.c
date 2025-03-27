@@ -97,11 +97,13 @@ lc_string *lc_string_format(const lc_char *format, ...)
     // ask for buffer size
     int length;
     lc_error_return_if(LCE_OTHER, false, (length = vsnprintf(NULL, 0, format, args)) < 0);
+    va_end(args);
 
     // allocate string of said buffer and call vsnprintf
     lc_string *str;
     lc_error_return_if(LCE_ALLOC_FAILED, false, !(str = lc_string_new(NULL, length)));
 
+    va_start(args, format);
     vsnprintf(str->data, length, format, args);
     va_end(args);
     return str;

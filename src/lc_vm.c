@@ -65,7 +65,9 @@ lc_void lc_vm_dump(lc_vm *vm)
 
 inline lc_bool lc_vm_push_value(lc_vm *vm, lc_value *value)
 {
-    lc_error_return_if(LCE_VM_STACK_OVERFLOW, false, vm->top >= (lc_int32)sizeof(vm->stack));
+    if (vm->top >= (lc_int32)sizeof(vm->stack))
+        return false;
+
     lc_mem_copy(&vm->stack[vm->top++], value, sizeof(lc_value));
     return true;
 }
