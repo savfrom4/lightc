@@ -35,17 +35,20 @@ static const lc_uint8 BYTECODE[] = {
     LCOP_IADD,
 };
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc < 2)
+        return 1;
+
     char buffer[4096] = {};
-    FILE *file = fopen("../tests/test1.lc", "r");
+    FILE *file = fopen(argv[1], "r");
     if (!file)
         return 1;
 
     fread(buffer, 1, sizeof(buffer), file);
     fclose(file);
 
-    printf("%s\n", buffer);
+    printf("%s\n\ntoken dump:\n", buffer);
 
     lc_list *tokens = lc_tokenizer_parse(&(lc_string){buffer, strlen(buffer)});
     if (!tokens)
