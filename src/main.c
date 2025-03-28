@@ -41,7 +41,7 @@ static const lc_uint8 BYTECODE[] = {
 
 int main()
 {
-    lc_list *tokens = lc_token_parse(&lc_string_comptime("int32 test(int32 a, int32 b) { return 10 * (a + b); }"));
+    lc_list *tokens = lc_token_parse(&lc_string_comptime("\"int32 test(int32 a, int32 b)\"\n{\nstring test = \"\";\n\nreturn 10 * (a + b);\n}\n"));
     if (!tokens)
     {
         printf("Error: %s\n", lc_error_msg());
@@ -51,7 +51,7 @@ int main()
     lc_list_foreach(tokens, it)
     {
         lc_token *token = it;
-        printf("%s \"%s\"\n", lc_token_name(token->type)->data, token->value ? token->value->data : "null");
+        printf("%s \"%s\"\n", lc_token_name(token->type)->data, token->data ? token->data->data : "null");
     }
 
     return 0;

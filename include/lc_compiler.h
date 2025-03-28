@@ -17,7 +17,8 @@ typedef enum
 typedef struct
 {
     lc_token_type type;
-    lc_string *value;
+    lc_usize position;
+    lc_string *data;
 } lc_token;
 
 lc_string *lc_token_name(lc_token_type type);
