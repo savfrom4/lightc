@@ -21,6 +21,15 @@ static lc_string STATIC_TOKEN_NAMES[] = {
     lc_string_comptime("semicolon"),
 };
 
+static lc_string STATIC_KEYWORDS[] = {
+    lc_string_comptime("struct"),
+    lc_string_comptime("if"),
+    lc_string_comptime("elif"),
+    lc_string_comptime("else"),
+    lc_string_comptime("return"),
+};
+static const lc_usize STATIC_KEYWORDS_SIZE = sizeof(STATIC_KEYWORDS) / sizeof(lc_string);
+
 lc_string *lc_token_name(lc_token_type type)
 {
     return &STATIC_TOKEN_NAMES[type];
@@ -43,7 +52,7 @@ lc_list *lc_token_parse(const lc_string *code)
 inline lc_bool lc_token_parse_fn(lc_list *list, const lc_char *ptr, lc_usize size)
 {
     lc_usize i = 0, start = 0;
-    lc_usize line_num = 1, line_size = 0;
+    lc_usize line_num = 1;
 
     while (i < size)
     {
@@ -53,7 +62,22 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_char *ptr, lc_usize siz
             while (i < size && (isalnum(ptr[i]) || ptr[i] == '_'))
                 i++;
 
-            if (!lc_token_append(list, LCTK_IDENTIFIER, lc_string_new(&ptr[start], (i - start))))
+            lc_token_type type = LCTK_IDENTIFIER;
+
+            for (lc_usize j = 0; j < STATIC_KEYWORDS_SIZE; j++)
+            {
+                const lc_string *keyword = &STATIC_KEYWORDS[j];
+                if ((i - start) != keyword->size)
+                    continue;
+
+                if (strncmp(&ptr[start], keyword->data, keyword->size) == 0)
+                {
+                    type = LCTK_KEYWORD;
+                    break;
+                }
+            }
+
+            if (!lc_token_append(list, type, lc_string_new(&ptr[start], (i - start))))
                 return false;
 
             continue;
@@ -84,15 +108,34 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_char *ptr, lc_usize siz
         case ']':
         case '{':
         case '}':
+        case ',':
             if (!lc_token_append(list, LCTK_DELIMITER, lc_string_new(&ptr[i++], sizeof(lc_char))))
                 return false;
             break;
 
+        case '!':
+        case '~':
+            if (!lc_token_append(list, LCTK_OPERATOR, lc_string_new(&ptr[i++], sizeof(lc_char))))
+                return false;
+            break;
+
+        case '<':
+        case '>':
         case '+':
         case '-':
         case '*':
         case '/':
         case '=':
+            // ex. ==, >=, <=
+            if (i + 1 < size && ptr[i + 1] == '=')
+            {
+                if (!lc_token_append(list, LCTK_OPERATOR, lc_string_new(&ptr[i], sizeof(lc_char) * 2)))
+                    return false;
+
+                i += 2;
+                break;
+            }
+
             if (!lc_token_append(list, LCTK_OPERATOR, lc_string_new(&ptr[i++], sizeof(lc_char))))
                 return false;
             break;
@@ -118,6 +161,7 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_char *ptr, lc_usize siz
 
         case '\n':
             line_num++;
+            i++;
             break;
 
         default:
