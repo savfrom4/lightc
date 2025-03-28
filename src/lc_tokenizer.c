@@ -210,8 +210,7 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
                     else
                         cnt--;
                 }
-
-                if (code->data[i] == c)
+                else if (code->data[i] == c)
                     cnt++;
 
                 i++;
