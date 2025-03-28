@@ -7,7 +7,7 @@
 
 // internal functions
 lc_bool lc_token_append(lc_list *list, lc_token token);
-lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code);
+lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize i);
 lc_void lc_token_error_line(const lc_string *code, lc_usize position, const lc_char *message);
 
 static lc_string STATIC_TOKEN_NAMES[] = {
@@ -40,7 +40,7 @@ lc_list *lc_token_parse(const lc_string *code)
     lc_list *list = lc_list_new(lc_token, 64);
     lc_error_return_if(LCE_ALLOC_FAILED, NULL, !list);
 
-    if (!lc_token_parse_fn(list, code))
+    if (!lc_token_parse_fn(list, code, 0))
     {
         lc_list_free(list);
         return NULL;
@@ -49,9 +49,9 @@ lc_list *lc_token_parse(const lc_string *code)
     return list;
 }
 
-inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code)
+inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize i)
 {
-    lc_usize i = 0, start = 0;
+    lc_usize start = 0;
     lc_usize line_no = 1;
 
     while (i < code->size)
@@ -94,25 +94,78 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code)
             continue;
         }
 
-        switch (code->data[i])
+        lc_char c = code->data[i];
+        switch (c)
         {
         case ';':
             i++;
+
             if (!lc_token_append(list, (lc_token){LCTK_SEMICOLON, i, NULL}))
                 return false;
+
             break;
 
-        case '(':
-        case ')':
-        case '[':
-        case ']':
-        case '{':
-        case '}':
         case ',':
             if (!lc_token_append(list, (lc_token){LCTK_DELIMITER, i, lc_string_new(&code->data[i], sizeof(lc_char))}))
                 return false;
 
             i++;
+            break;
+
+        case '(':
+        case '[':
+        case '{':
+            if (!lc_token_append(list, (lc_token){LCTK_DELIMITER, i, lc_string_new(&code->data[i], sizeof(lc_char))}))
+                return false;
+
+            start = ++i;
+
+            lc_char delim;
+            lc_char *delim_name;
+            switch (c)
+            {
+            case '(':
+                delim = ')';
+                delim_name = "closing parenthesis";
+                break;
+            case '[':
+                delim = ']';
+                delim_name = "closing bracket";
+                break;
+            case '{':
+                delim = '}';
+                delim_name = "closing brace";
+                break;
+            }
+
+            lc_usize last = 0;
+            while (i < code->size)
+            {
+                if (code->data[i] == delim)
+                    last = i;
+
+                if (code->data[i] == c)
+                    break;
+
+                i++;
+            }
+
+            if (!last)
+            {
+                char error[512];
+                snprintf(error, 512, "Expected '%c' (%s).", delim, delim_name);
+
+                lc_token_error_line(code, start - 1, error);
+                return false;
+            }
+
+            if (!lc_token_parse_fn(list, &(lc_string){code->data, last}, start))
+                return false;
+
+            if (!lc_token_append(list, (lc_token){LCTK_DELIMITER, i, lc_string_new(&code->data[last], sizeof(lc_char))}))
+                return false;
+
+            i = last + 1;
             break;
 
         case '!':
@@ -205,7 +258,7 @@ lc_void lc_token_error_line(const lc_string *code, lc_usize position, const lc_c
             while (i < code->size && code->data[i] != '\n')
                 i++;
 
-            line_size = i - line_size;
+            line_size = i - line_start;
             break;
         }
     }

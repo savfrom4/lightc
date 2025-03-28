@@ -5,6 +5,7 @@
 #include "lc_types.h"
 #include "lc_vm.h"
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #define DUMP_INT64(x)                   \
@@ -41,7 +42,17 @@ static const lc_uint8 BYTECODE[] = {
 
 int main()
 {
-    lc_list *tokens = lc_token_parse(&lc_string_comptime("\"int32 test(int32 a, int32 b)\"\n{\nstring test = \"\";\n\nreturn 10 * (a + b);\n}\n"));
+    char buffer[4096] = {};
+    FILE *file = fopen("../tests/test1.lc", "r");
+    if (!file)
+        return 1;
+
+    fread(buffer, 1, sizeof(buffer), file);
+    fclose(file);
+
+    printf("%s\n\n", buffer);
+
+    lc_list *tokens = lc_token_parse(&(lc_string){buffer, strlen(buffer)});
     if (!tokens)
     {
         printf("Error: %s\n", lc_error_msg());
@@ -51,7 +62,7 @@ int main()
     lc_list_foreach(tokens, it)
     {
         lc_token *token = it;
-        printf("%s \"%s\"\n", lc_token_name(token->type)->data, token->data ? token->data->data : "null");
+        printf("%s ", token->data ? token->data->data : "null");
     }
 
     return 0;
