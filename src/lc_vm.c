@@ -11,12 +11,8 @@ static inline lc_bool lc_vm_type_new(lc_vm *vm, lc_type type);
 
 lc_vm *lc_vm_new(const lc_uint8 *bytecode, lc_usize bytecode_size)
 {
-    lc_vm *vm = lc_mem_alloc(sizeof(lc_vm));
-    if (!vm)
-    {
-        lc_error_set(LCE_ALLOC_FAILED, "vm");
-        return NULL;
-    }
+    lc_vm *vm;
+    lc_error_return_if(LCE_ALLOC_FAILED, NULL, !(vm = lc_mem_alloc(sizeof(lc_vm))));
 
     *vm = (lc_vm){
         .types = lc_list_new(lc_type *, 256),

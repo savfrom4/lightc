@@ -5,12 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// internal functions
-lc_bool lc_tokenizer_append(lc_list *list, lc_token token);
-lc_bool lc_tokenizer_append_operator(lc_list *list, const lc_string *code, lc_usize *i, lc_token_operator a, lc_token_operator b);
-lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_usize i);
-lc_void lc_tokenizer_error_line(const lc_string *code, lc_usize position, const lc_char *message);
-
 static lc_string STATIC_TOKEN_NAMES[LCTK_COUNT] = {
     lc_string_comptime("none"),
     lc_string_comptime("keyword"),
@@ -49,6 +43,12 @@ static lc_string STATIC_OPERATORS[LCTOP_COUNT] = {
     lc_string_comptime("/"),
     lc_string_comptime("/="),
 };
+
+// internal functions
+lc_bool lc_tokenizer_append(lc_list *list, lc_token token);
+lc_bool lc_tokenizer_append_operator(lc_list *list, const lc_string *code, lc_usize *i, lc_token_operator a, lc_token_operator b);
+lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_usize i);
+lc_void lc_tokenizer_error_line(const lc_string *code, lc_usize position, const lc_char *message);
 
 lc_list *lc_tokenizer_parse(const lc_string *code)
 {
@@ -188,10 +188,12 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
                 delim = ')';
                 delim_name = "closing parenthesis";
                 break;
+
             case '[':
                 delim = ']';
                 delim_name = "closing bracket";
                 break;
+
             case '{':
                 delim = '}';
                 delim_name = "closing brace";
@@ -232,6 +234,18 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
 
             i = end + 1;
             break;
+
+        case ')':
+            lc_tokenizer_error_line(code, i, "Expected '(' (opening parenthesis).");
+            return false;
+
+        case ']':
+            lc_tokenizer_error_line(code, i, "Expected '[' (opening brace).");
+            return false;
+
+        case '}':
+            lc_tokenizer_error_line(code, i, "Expected '{' (opening parenthesis).");
+            return false;
 
         case '!':
             if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_NOT, LCTOP_NOTEQ))

@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 static lc_error g_error = LCE_UNKNOWN;
-static lc_char g_error_msg[256] = {};
+static lc_char g_error_msg[1024] = {};
 
 lc_void lc_error_set(lc_error error, const lc_char *context)
 {
