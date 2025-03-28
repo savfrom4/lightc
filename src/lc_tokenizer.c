@@ -1,4 +1,4 @@
-#include "lc_compiler.h"
+#include "lc_tokenizer.h"
 #include "lc_error.h"
 #include "lc_types.h"
 #include <ctype.h>
@@ -32,22 +32,22 @@ static lc_string STATIC_KEYWORDS[LCTKW_COUNT] = {
 };
 
 static lc_string STATIC_OPERATORS[LCTOP_COUNT] = {
-    lc_string_comptime("not"),
-    lc_string_comptime("equals"),
-    lc_string_comptime("not equals"),
-    lc_string_comptime("less"),
-    lc_string_comptime("less or equal"),
-    lc_string_comptime("greater"),
-    lc_string_comptime("greater or equal"),
-    lc_string_comptime("assign"),
-    lc_string_comptime("add"),
-    lc_string_comptime("add assign"),
-    lc_string_comptime("substract"),
-    lc_string_comptime("substract assign"),
-    lc_string_comptime("multiply"),
-    lc_string_comptime("multiply assign"),
-    lc_string_comptime("divide"),
-    lc_string_comptime("divide assign"),
+    lc_string_comptime("!"),
+    lc_string_comptime("=="),
+    lc_string_comptime("!="),
+    lc_string_comptime("<"),
+    lc_string_comptime("<="),
+    lc_string_comptime(">"),
+    lc_string_comptime(">="),
+    lc_string_comptime("="),
+    lc_string_comptime("+"),
+    lc_string_comptime("+="),
+    lc_string_comptime("-"),
+    lc_string_comptime("-="),
+    lc_string_comptime("*"),
+    lc_string_comptime("*="),
+    lc_string_comptime("/"),
+    lc_string_comptime("/="),
 };
 
 lc_list *lc_tokenizer_parse(const lc_string *code)

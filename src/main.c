@@ -1,9 +1,4 @@
 #include "lc.h"
-#include "lc_compiler.h"
-#include "lc_error.h"
-#include "lc_mem.h"
-#include "lc_types.h"
-#include "lc_vm.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
