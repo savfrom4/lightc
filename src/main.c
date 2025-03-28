@@ -50,9 +50,9 @@ int main()
     fread(buffer, 1, sizeof(buffer), file);
     fclose(file);
 
-    printf("%s\n\n", buffer);
+    printf("%s\n", buffer);
 
-    lc_list *tokens = lc_token_parse(&(lc_string){buffer, strlen(buffer)});
+    lc_list *tokens = lc_tokenizer_parse(&(lc_string){buffer, strlen(buffer)});
     if (!tokens)
     {
         printf("Error: %s\n", lc_error_msg());
@@ -61,8 +61,7 @@ int main()
 
     lc_list_foreach(tokens, it)
     {
-        lc_token *token = it;
-        printf("%s ", token->data ? token->data->data : "null");
+        lc_tokenizer_token_dump(it);
     }
 
     return 0;

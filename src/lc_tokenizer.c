@@ -6,11 +6,12 @@
 #include <string.h>
 
 // internal functions
-lc_bool lc_token_append(lc_list *list, lc_token token);
-lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize i);
-lc_void lc_token_error_line(const lc_string *code, lc_usize position, const lc_char *message);
+lc_bool lc_tokenizer_append(lc_list *list, lc_token token);
+lc_bool lc_tokenizer_append_operator(lc_list *list, const lc_string *code, lc_usize *i, lc_token_operator a, lc_token_operator b);
+lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_usize i);
+lc_void lc_tokenizer_error_line(const lc_string *code, lc_usize position, const lc_char *message);
 
-static lc_string STATIC_TOKEN_NAMES[] = {
+static lc_string STATIC_TOKEN_NAMES[LCTK_COUNT] = {
     lc_string_comptime("none"),
     lc_string_comptime("keyword"),
     lc_string_comptime("identifier"),
@@ -18,29 +19,43 @@ static lc_string STATIC_TOKEN_NAMES[] = {
     lc_string_comptime("delimiter"),
     lc_string_comptime("string literal"),
     lc_string_comptime("numeric literal"),
-    lc_string_comptime("semicolon"),
 };
 
-static lc_string STATIC_KEYWORDS[] = {
+static lc_string STATIC_KEYWORDS[LCTKW_COUNT] = {
     lc_string_comptime("struct"),
+    lc_string_comptime("for"),
+    lc_string_comptime("while"),
     lc_string_comptime("if"),
     lc_string_comptime("elif"),
     lc_string_comptime("else"),
     lc_string_comptime("return"),
 };
-static const lc_usize STATIC_KEYWORDS_SIZE = sizeof(STATIC_KEYWORDS) / sizeof(lc_string);
 
-lc_string *lc_token_name(lc_token_type type)
-{
-    return &STATIC_TOKEN_NAMES[type];
-}
+static lc_string STATIC_OPERATORS[LCTOP_COUNT] = {
+    lc_string_comptime("not"),
+    lc_string_comptime("equals"),
+    lc_string_comptime("not equals"),
+    lc_string_comptime("less"),
+    lc_string_comptime("less or equal"),
+    lc_string_comptime("greater"),
+    lc_string_comptime("greater or equal"),
+    lc_string_comptime("assign"),
+    lc_string_comptime("add"),
+    lc_string_comptime("add assign"),
+    lc_string_comptime("substract"),
+    lc_string_comptime("substract assign"),
+    lc_string_comptime("multiply"),
+    lc_string_comptime("multiply assign"),
+    lc_string_comptime("divide"),
+    lc_string_comptime("divide assign"),
+};
 
-lc_list *lc_token_parse(const lc_string *code)
+lc_list *lc_tokenizer_parse(const lc_string *code)
 {
     lc_list *list = lc_list_new(lc_token, 64);
     lc_error_return_if(LCE_ALLOC_FAILED, NULL, !list);
 
-    if (!lc_token_parse_fn(list, code, 0))
+    if (!lc_tokenizer_parse_fn(list, code, 0))
     {
         lc_list_free(list);
         return NULL;
@@ -49,22 +64,75 @@ lc_list *lc_token_parse(const lc_string *code)
     return list;
 }
 
-inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize i)
+lc_string *lc_tokenizer_token_name(lc_token_type type)
+{
+    if (type >= LCTK_COUNT)
+        return NULL;
+
+    return &STATIC_TOKEN_NAMES[type];
+}
+
+lc_string *lc_tokenizer_keyword_name(lc_token_keyword type)
+{
+    if (type >= LCTKW_COUNT)
+        return NULL;
+
+    return &STATIC_KEYWORDS[type];
+}
+
+lc_string *lc_tokenizer_operator_name(lc_token_operator type)
+{
+    if (type >= LCTOP_COUNT)
+        return NULL;
+
+    return &STATIC_OPERATORS[type];
+}
+
+lc_void lc_tokenizer_token_dump(const lc_token *token)
+{
+    switch (token->type)
+    {
+    case LCTK_NONE:
+        printf("lc_token {}\n");
+        break;
+
+    case LCTK_KEYWORD:
+        printf("lc_token { %s, \"%s\" }\n", STATIC_TOKEN_NAMES[token->type].data, STATIC_KEYWORDS[token->u.key].data);
+        break;
+
+    case LCTK_OPERATOR:
+        printf("lc_token { %s, \"%s\" }\n", STATIC_TOKEN_NAMES[token->type].data, STATIC_OPERATORS[token->u.op].data);
+        break;
+
+    case LCTK_IDENTIFIER:
+    case LCTK_STRING_LITERAL:
+    case LCTK_NUMERIC_LITERAL:
+        printf("lc_token { %s, \"%s\" }\n", STATIC_TOKEN_NAMES[token->type].data, token->u.str->data);
+        break;
+
+    case LCTK_DELIMITER:
+        printf("lc_token { %s, '%c' }\n", STATIC_TOKEN_NAMES[token->type].data, token->u.delim);
+        break;
+
+    default:
+        return;
+    }
+}
+
+inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_usize i)
 {
     lc_usize start = 0;
-    lc_usize line_no = 1;
 
     while (i < code->size)
     {
         if (isalpha(code->data[i])) // identifier
         {
-            lc_token_type type = LCTK_IDENTIFIER;
             start = i;
 
             while (i < code->size && (isalnum(code->data[i]) || code->data[i] == '_'))
                 i++;
 
-            for (lc_usize j = 0; j < STATIC_KEYWORDS_SIZE; j++)
+            for (lc_usize j = 0; j < LCTKW_COUNT; j++)
             {
                 const lc_string *keyword = &STATIC_KEYWORDS[j];
                 if ((i - start) != keyword->size)
@@ -72,14 +140,13 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
 
                 if (strncmp(&code->data[start], keyword->data, keyword->size) == 0)
                 {
-                    type = LCTK_KEYWORD;
-                    break;
+                    if (!lc_tokenizer_append(list, (lc_token){LCTK_KEYWORD, i, {.key = (lc_token_keyword)j}}))
+                        return false;
                 }
             }
 
-            if (!lc_token_append(list, (lc_token){type, i, lc_string_new(&code->data[start], (i - start))}))
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_IDENTIFIER, i, {.str = lc_string_new(&code->data[start], (i - start))}}))
                 return false;
-
             continue;
         }
         else if (isdigit(code->data[i])) // numeric literal
@@ -88,7 +155,7 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
             while (i < code->size && (isdigit(code->data[i]) || code->data[i] == '.'))
                 i++;
 
-            if (!lc_token_append(list, (lc_token){LCTK_NUMERIC_LITERAL, i, lc_string_new(&code->data[start], (i - start))}))
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_NUMERIC_LITERAL, i, {.str = lc_string_new(&code->data[start], (i - start))}}))
                 return false;
 
             continue;
@@ -98,15 +165,8 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
         switch (c)
         {
         case ';':
-            i++;
-
-            if (!lc_token_append(list, (lc_token){LCTK_SEMICOLON, i, NULL}))
-                return false;
-
-            break;
-
         case ',':
-            if (!lc_token_append(list, (lc_token){LCTK_DELIMITER, i, lc_string_new(&code->data[i], sizeof(lc_char))}))
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_DELIMITER, i, {.delim = c}}))
                 return false;
 
             i++;
@@ -115,7 +175,7 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
         case '(':
         case '[':
         case '{':
-            if (!lc_token_append(list, (lc_token){LCTK_DELIMITER, i, lc_string_new(&code->data[i], sizeof(lc_char))}))
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_DELIMITER, i, {.delim = c}}))
                 return false;
 
             start = ++i;
@@ -138,65 +198,79 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
                 break;
             }
 
-            lc_usize last = 0;
+            lc_usize cnt = 0, end = 0;
             while (i < code->size)
             {
                 if (code->data[i] == delim)
-                    last = i;
+                {
+                    if (cnt == 0)
+                        end = i;
+                    else
+                        cnt--;
+                }
 
                 if (code->data[i] == c)
-                    break;
+                    cnt++;
 
                 i++;
             }
 
-            if (!last)
+            if (!end)
             {
                 char error[512];
                 snprintf(error, 512, "Expected '%c' (%s).", delim, delim_name);
 
-                lc_token_error_line(code, start - 1, error);
+                lc_tokenizer_error_line(code, start - 1, error);
                 return false;
             }
 
-            if (!lc_token_parse_fn(list, &(lc_string){code->data, last}, start))
+            if (!lc_tokenizer_parse_fn(list, &(lc_string){code->data, end}, start))
                 return false;
 
-            if (!lc_token_append(list, (lc_token){LCTK_DELIMITER, i, lc_string_new(&code->data[last], sizeof(lc_char))}))
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_DELIMITER, i, {.delim = delim}}))
                 return false;
 
-            i = last + 1;
+            i = end + 1;
             break;
 
         case '!':
-        case '~':
-            if (!lc_token_append(list, (lc_token){LCTK_OPERATOR, i, lc_string_new(&code->data[i], sizeof(lc_char))}))
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_NOT, LCTOP_NOTEQ))
                 return false;
-
-            i++;
             break;
 
         case '<':
-        case '>':
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '=':
-            // ex. ==, >=, <=
-            if (i + 1 < code->size && code->data[i + 1] == '=')
-            {
-                if (!lc_token_append(list, (lc_token){LCTK_OPERATOR, i, lc_string_new(&code->data[i], 2)}))
-                    return false;
-
-                i += 2;
-                break;
-            }
-
-            if (!lc_token_append(list, (lc_token){LCTK_OPERATOR, i, lc_string_new(&code->data[i], 1)}))
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_LESS, LCTOP_LESSEQ))
                 return false;
+            break;
 
-            i++;
+        case '>':
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_GRE, LCTOP_GREEQ))
+                return false;
+            break;
+
+        case '+':
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_ADD, LCTOP_ADDEQ))
+                return false;
+            break;
+
+        case '-':
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_SUB, LCTOP_SUBEQ))
+                return false;
+            break;
+
+        case '*':
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_MUL, LCTOP_MULEQ))
+                return false;
+            break;
+
+        case '/':
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_DIV, LCTOP_DIVEQ))
+                return false;
+            break;
+
+        case '=':
+            if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_ASSIGN, LCTOP_EQ))
+                return false;
             break;
 
         case '\"': // string literal
@@ -206,21 +280,16 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
             {
                 if (code->data[i] == '\n' || i >= code->size)
                 {
-                    lc_token_error_line(code, i - 1, "Expected '\"' (end of string literal), got end of the line.");
+                    lc_tokenizer_error_line(code, i - 1, "Expected '\"' (end of string literal), got end of the line.");
                     return false;
                 }
 
                 i++;
             }
 
-            if (!lc_token_append(list, (lc_token){LCTK_STRING_LITERAL, i, lc_string_new(&code->data[start], (i - start))}))
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_STRING_LITERAL, i, {.str = lc_string_new(&code->data[start], (i - start))}}))
                 return false;
 
-            i++;
-            break;
-
-        case '\n':
-            line_no++;
             i++;
             break;
 
@@ -233,7 +302,7 @@ inline lc_bool lc_token_parse_fn(lc_list *list, const lc_string *code, lc_usize 
     return true;
 }
 
-inline lc_bool lc_token_append(lc_list *list, lc_token token)
+inline lc_bool lc_tokenizer_append(lc_list *list, lc_token token)
 {
     if (!lc_list_append(list, &token))
         return false;
@@ -241,7 +310,26 @@ inline lc_bool lc_token_append(lc_list *list, lc_token token)
     return true;
 }
 
-lc_void lc_token_error_line(const lc_string *code, lc_usize position, const lc_char *message)
+inline lc_bool lc_tokenizer_append_operator(lc_list *list, const lc_string *code, lc_usize *i, lc_token_operator a, lc_token_operator b)
+{
+    // <=, ==, !=, ....
+    if (*i + 1 < code->size && code->data[*i + 1] == '=')
+    {
+        if (!lc_tokenizer_append(list, (lc_token){LCTK_OPERATOR, *i, {.op = b}}))
+            return false;
+
+        (*i) += 2;
+        return true;
+    }
+
+    if (!lc_tokenizer_append(list, (lc_token){LCTK_OPERATOR, *i, {.op = a}}))
+        return false;
+
+    (*i)++;
+    return true;
+}
+
+lc_void lc_tokenizer_error_line(const lc_string *code, lc_usize position, const lc_char *message)
 {
     // find the line
     lc_usize line_start = 0, line_size = 0, line_num = 1;
