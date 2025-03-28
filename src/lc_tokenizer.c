@@ -125,13 +125,16 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
 
     while (i < code->size)
     {
-        if (isalpha(code->data[i])) // identifier
+        lc_char c = code->data[i];
+
+        if (isalpha(c) || c == '_') // identifier or keyword
         {
             start = i;
 
             while (i < code->size && (isalnum(code->data[i]) || code->data[i] == '_'))
                 i++;
 
+            // check if its keyword
             for (lc_usize j = 0; j < LCTKW_COUNT; j++)
             {
                 const lc_string *keyword = &STATIC_KEYWORDS[j];
@@ -149,7 +152,7 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
                 return false;
             continue;
         }
-        else if (isdigit(code->data[i])) // numeric literal
+        else if (isdigit(c)) // numeric literal
         {
             start = i;
             while (i < code->size && (isdigit(code->data[i]) || code->data[i] == '.'))
@@ -159,9 +162,8 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
                 return false;
 
             continue;
-        }
+        };
 
-        lc_char c = code->data[i];
         switch (c)
         {
         case ';':
@@ -172,6 +174,7 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
             i++;
             break;
 
+        /* braces */
         case '(':
         case '[':
         case '{':
@@ -246,6 +249,29 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
             lc_tokenizer_error_line(code, i, "Expected '{' (opening parenthesis).");
             return false;
 
+        /* string literal */
+        case '\"': {
+            start = ++i;
+
+            while (code->data[i] != '\"')
+            {
+                if (code->data[i] == '\n' || i >= code->size)
+                {
+                    lc_tokenizer_error_line(code, i - 1, "Expected '\"' (end of string literal), got end of the line.");
+                    return false;
+                }
+
+                i++;
+            }
+
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_STRING_LITERAL, i, {.str = lc_string_new(&code->data[start], (i - start))}}))
+                return false;
+
+            i++;
+            break;
+        }
+
+        /* operators */
         case '!':
             if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_NOT, LCTOP_NOTEQ))
                 return false;
@@ -286,24 +312,9 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
                 return false;
             break;
 
-        case '\"': // string literal
-            start = ++i;
-
-            while (code->data[i] != '\"')
-            {
-                if (code->data[i] == '\n' || i >= code->size)
-                {
-                    lc_tokenizer_error_line(code, i - 1, "Expected '\"' (end of string literal), got end of the line.");
-                    return false;
-                }
-
-                i++;
-            }
-
-            if (!lc_tokenizer_append(list, (lc_token){LCTK_STRING_LITERAL, i, {.str = lc_string_new(&code->data[start], (i - start))}}))
+        case '.':
+            if (!lc_tokenizer_append(list, (lc_token){LCTK_OPERATOR, i++, {.op = LCTOP_ACCESS}}))
                 return false;
-
-            i++;
             break;
 
         default:

@@ -39,6 +39,7 @@ typedef enum
     LCTOP_GREEQ,
 
     LCTOP_ASSIGN,
+    LCTOP_ACCESS,
     LCTOP_ADD,
     LCTOP_ADDEQ,
     LCTOP_SUB,
