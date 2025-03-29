@@ -1,9 +1,1 @@
-struct Test
-{
-    int32 a;
-    string b;
-}
-
-Test test(int32 a, int32 b) {
-    return Test { .a = a + b, .b = "cool" }
-}
+// this is a test

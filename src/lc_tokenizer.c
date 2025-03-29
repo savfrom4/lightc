@@ -308,6 +308,22 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
             break;
 
         case '/':
+            // this can also be a comment
+            if (i + 1 < code->size && code->data[i + 1] == '/')
+            {
+                i++;
+
+                while (code->data[i] != '\"')
+                {
+                    if (code->data[i] == '\n' || i >= code->size)
+                        break;
+
+                    i++;
+                }
+
+                break;
+            }
+
             if (!lc_tokenizer_append_operator(list, code, &i, LCTOP_DIV, LCTOP_DIVEQ))
                 return false;
             break;
