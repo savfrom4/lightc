@@ -1,4 +1,5 @@
 #include "lc.h"
+#include "lc_compiler.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -24,24 +25,24 @@
         (uint8_t)(((uint16_t)x) >> 8)
 
 static const lc_uint8 BYTECODE[] = {
-    LCOP_PUSH,
+    LC_VMOP_PUSH,
     LCT_INT16,
     DUMP_INT16(69),
 
-    LCOP_PUSH,
+    LC_VMOP_PUSH,
     LCT_INT32,
     DUMP_INT32(UINT16_MAX + 1),
 
-    LCOP_IADD,
+    LC_VMOP_IADD,
 };
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
-        return 1;
+    // if (argc < 2)
+    // return 1;
 
     char buffer[4096] = {};
-    FILE *file = fopen(argv[1], "r");
+    FILE *file = fopen("../tests/test1.lc", "r");
     if (!file)
         return 1;
 
@@ -56,6 +57,8 @@ int main(int argc, char **argv)
         printf("Error: %s\n", lc_error_msg());
         return 1;
     }
+
+    lc_compiler_eval(tokens);
 
     lc_list_foreach(tokens, it)
     {

@@ -62,7 +62,7 @@ typedef struct
 
 typedef struct
 {
-    lc_void *ptr;
+    lc_void *data;
     lc_usize capt, el_size, size;
 } lc_list;
 
@@ -74,6 +74,7 @@ typedef struct
 lc_bool lc_type_is_int(lc_type type);
 lc_bool lc_type_is_float(lc_type type);
 const lc_string *lc_type_name(lc_type type);
+lc_type lc_type_from_name(const lc_string *type_name);
 
 #define lc_string_comptime(str) ((lc_string){str, (sizeof(str) - 1)})
 lc_string *lc_string_new(const lc_char *str, lc_usize size);
@@ -81,7 +82,7 @@ lc_void lc_string_free(lc_string *str);
 lc_string *lc_string_format(const lc_char *format, ...);
 lc_string *lc_string_dupe(const lc_string *str);
 
-#define lc_list_foreach(list, name) for (lc_void *name = list->ptr; name < list->ptr + list->size * list->el_size; name += list->el_size)
+#define lc_list_foreach(list, name) for (lc_void *name = list->data; name < list->data + list->size * list->el_size; name += list->el_size)
 #define lc_list_new(type, capacity) lc_list_new_sized(sizeof(type), capacity)
 lc_list *lc_list_new_sized(lc_usize el_size, lc_usize capacity);
 lc_bool lc_list_append(lc_list *list, void *value);

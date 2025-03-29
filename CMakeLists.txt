@@ -20,10 +20,11 @@ endif()
 
 add_library(lcjit
     "src/lc_error.c"
-    "src/lc_types.c"
+    "src/lc_types.c"    
     "src/lc_mem.c"
     "src/lc_vm.c"
     "src/lc_tokenizer.c"
+    "src/lc_compiler.c"
 )
 
 target_include_directories(lcjit PUBLIC "include/")

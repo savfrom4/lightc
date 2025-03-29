@@ -4,22 +4,23 @@
 
 typedef enum
 {
-    LCOP_NOOP,
+    LC_VMOP_NOOP,
 
-    LCOP_PUSH,
-    LCOP_POP,
+    LC_VMOP_PUSH,
+    LC_VMOP_POP,
+    LC_VMOP_CALL,
 
-    LCOP_IADD,
-    LCOP_ISUB,
-    LCOP_IMUL,
-    LCOP_IDIV,
+    LC_VMOP_IADD,
+    LC_VMOP_ISUB,
+    LC_VMOP_IMUL,
+    LC_VMOP_IDIV,
 
-    LCOP_FADD,
-    LCOP_FSUB,
-    LCOP_FMUL,
-    LCOP_FDIV,
+    LC_VMOP_FADD,
+    LC_VMOP_FSUB,
+    LC_VMOP_FMUL,
+    LC_VMOP_FDIV,
 
-    LCOP_CALL,
+    LC_VMOP_COUNT,
 } lc_vm_op;
 
 typedef struct

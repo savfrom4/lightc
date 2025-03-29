@@ -4,16 +4,13 @@
 
 typedef enum
 {
-    LCE_UNKNOWN = 0,
-    LCE_OTHER = -1,
-
-    LCE_INVALID_ARGUMENT = -2,
-    LCE_ALLOC_FAILED = -3,
-
-    LCE_VM_STACK_OVERFLOW = -4,
-    LCE_VM_EARLY_EOF = -5,
-
-    LCE_PARSE_ERROR = -6,
+    LC_E_UNKNOWN = 0,
+    LC_E_OTHER = -1,
+    LC_E_INVALID_ARGUMENT = -2,
+    LC_E_ALLOC_FAILED = -3,
+    LC_E_VM_STACK_OVERFLOW = -4,
+    LC_E_VM_EARLY_EOF = -5,
+    LC_E_PARSE_ERROR = -6,
 } lc_error;
 
 #define lc_error_return_if(error, result, expression) \
