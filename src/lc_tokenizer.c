@@ -162,7 +162,12 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
                 return false;
 
             continue;
-        };
+        }
+        else if (isspace(c))
+        {
+            i++;
+            continue;
+        }
 
         switch (c)
         {
@@ -318,8 +323,8 @@ inline lc_bool lc_tokenizer_parse_fn(lc_list *list, const lc_string *code, lc_us
             break;
 
         default:
-            i++;
-            break;
+            lc_tokenizer_error_line(code, i, "Unsupported character encountered.");
+            return false;
         }
     }
 
