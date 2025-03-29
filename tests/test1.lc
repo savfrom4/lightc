@@ -1,7 +1,9 @@
 struct Test
 {
-    int32 balls;
-    int32 cocks;
+    int32 a;
+    string b;
 }
 
-они чан возми меня~~~
+Test test(int32 a, int32 b) {
+    return Test { .a = a + b, .b = "cool" }
+}
